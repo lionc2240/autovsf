@@ -10,7 +10,11 @@ Công cụ hỗ trợ trích xuất phụ đề từ video thông qua VideoSubFi
 pip install watchdog google-api-python-client oauth2client httplib2 opencv-python psutil Pillow
 ```
 
-### 2. Thiết lập Google Cloud (Bắt buộc cho OCR)
+### 2. Tải VideoSubFinder (VSF)
+Tải công cụ VideoSubFinder phiên bản 6.10 (x64) tại đây: [Download VideoSubFinder](https://www.videohelp.com/download/VideoSubFinder_6.10_x64.zip?r=fcBBfmZrTz)
+*Sau khi tải về, hãy giải nén và trỏ đường dẫn đến file `VideoSubFinderWXW_intel.exe` trong tab Settings của ứng dụng.*
+
+### 3. Thiết lập Google Cloud (Bắt buộc cho OCR)
 Bạn cần cấu hình Google Drive API để lấy file `credentials.json`.
 Chi tiết các bước thực hiện xem tại: [Hướng dẫn thiết lập Google Cloud](docs/GOOGLE_SETUP.md)
 
