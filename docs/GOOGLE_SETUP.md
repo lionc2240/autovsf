@@ -26,7 +26,7 @@
 
 ## Bước 4: Thiết lập trạng thái xác thực (Quan trọng)
 Để chương trình có thể tự động mở trình duyệt và xác thực mà không gặp lỗi "App not verified":
-1. Tại [Google Cloud Console](https://console.cloud.google.com/), truy cập mục **"APIs & Services"** > **"OAuth consent screen"**.
+1. Tại [Google Cloud Console](https://console.cloud.google.com/), truy cập mục **"APIs & Services"** > **"Audience"**.
 2. Tìm phần **"Publishing status"**.
 3. Nhấn nút **"PUBLISH APP"** và xác nhận.
     - Việc này sẽ chuyển trạng thái từ "Testing" sang "In production", giúp quá trình đăng nhập lần đầu (tạo `token.json`) diễn ra trơn tru.
