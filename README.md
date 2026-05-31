@@ -35,4 +35,4 @@ python main.py
 
 ## Lưu ý quan trọng
 - Khi chạy OCR lần đầu, trình duyệt sẽ mở trang đăng nhập Google. Hãy chọn đúng tài khoản bạn đã dùng để tạo dự án trên Google Cloud.
-- Đảm bảo bạn đã **Publish** app trong mục "OAuth consent screen" trên Google Cloud để tránh lỗi xác thực.
+- Đảm bảo bạn đã **Publish** app trong mục "Audience" trên Google Cloud để tránh lỗi xác thực.
