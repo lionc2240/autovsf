@@ -17,7 +17,6 @@
 3. Nếu đây là lần đầu, bạn có thể cần nhấn **"Configure Consent Screen"**:
     - Chọn **External**.
     - Điền các thông tin bắt buộc (Tên app, Email hỗ trợ).
-    - Tại phần **Scopes**, thêm scope: `.../auth/drive` (hoặc để trống nếu bạn muốn thiết lập sau).
 4. Quay lại trang **Create OAuth client ID**:
     - **Application type**: Chọn **Desktop app**.
     - **Name**: Đặt tên tùy ý (ví dụ: `AutoVSF-OCR`).
