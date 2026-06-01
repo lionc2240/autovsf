@@ -784,6 +784,21 @@ t2 = ttk.Frame(nb); nb.add(t2, text="② OCR → SRT")
 images_var = tk.StringVar()
 srt_var    = tk.StringVar()
 
+def check_images_folder(*_):
+    path = images_var.get().strip()
+    if path and os.path.isdir(path):
+        try:
+            count = 0
+            for f in os.listdir(path):
+                if f.lower().endswith(('.jpeg', '.jpg', '.png', '.bmp')):
+                    count += 1
+            log(f"📁 Đã chọn thư mục ảnh: {path}")
+            log(f"ℹ️ Tìm thấy {count} ảnh trong thư mục này.")
+        except Exception as e:
+            log(f"⚠️ Không thể đọc thư mục ảnh: {e}")
+
+images_var.trace_add("write", check_images_folder)
+
 def _row(parent, r, label, var, pick_fn):
     ttk.Label(parent, text=label).grid(row=r, column=0, sticky="w", padx=6, pady=4)
     ttk.Entry(parent, textvariable=var, width=52).grid(row=r, column=1, padx=4)
@@ -791,11 +806,16 @@ def _row(parent, r, label, var, pick_fn):
 
 _row(t2, 0, "Thư mục ảnh:", images_var,
      lambda: images_var.set(filedialog.askdirectory()))
-_row(t2, 1, "Lưu SRT:", srt_var,
+
+# Gợi ý bên dưới dòng path thư mục ảnh
+ttk.Label(t2, text="Gợi ý: Chọn thư mục 'RGBImages' trong thư mục kết quả '_out' từ VideoSubFinder.",
+          foreground="#888888", font=("Helvetica", 8)).grid(row=1, column=1, sticky="w", padx=4, pady=(0,4))
+
+_row(t2, 2, "Lưu SRT:", srt_var,
      lambda: srt_var.set(filedialog.asksaveasfilename(
          defaultextension=".srt", filetypes=[("SRT","*.srt")])))
 
-bf = ttk.Frame(t2); bf.grid(row=2, column=0, columnspan=3, pady=(5, 5))
+bf = ttk.Frame(t2); bf.grid(row=3, column=0, columnspan=3, pady=(5, 5))
 btn_ocr  = ttk.Button(bf, text="▶ Chạy OCR",  command=run_ocr);  btn_ocr.pack(side="left", padx=6)
 btn_stop = ttk.Button(bf, text="⏹ Dừng", command=stop_ocr, state="disabled"); btn_stop.pack(side="left")
 
@@ -821,9 +841,11 @@ def _srow(r, label, var, pick_fn=None, hint=None, clear_btn=False):
 s_cfg = C.load()
 s_folder_var  = tk.StringVar(value=s_cfg.get("folder_id", ""))
 s_cred_var    = tk.StringVar(value=s_cfg.get("credentials_file", "credentials.json"))
-s_token_var   = tk.StringVar(value=s_cfg.get("token_file", "token.json"))
 s_vsf_var     = tk.StringVar(value=s_cfg.get("vsf_path", ""))
 s_threads_var = tk.StringVar(value=str(s_cfg.get("threads", 20)))
+s_del_raw_var = tk.BooleanVar(value=s_cfg.get("delete_raw_texts", False))
+s_del_txt_var = tk.BooleanVar(value=s_cfg.get("delete_texts", False))
+s_zip_raw_var = tk.BooleanVar(value=s_cfg.get("nen_raw_texts", False))
 
 # Trace hiển thị đường dẫn tuyệt đối cho credentials
 s_cred_abs_var = tk.StringVar()
@@ -948,44 +970,58 @@ ttk.Button(_cred_btn_f, text="…", width=3, command=_browse_credentials).pack(s
 _update_cred_display()
 
 
-_srow(6, "token.json:",         s_token_var,
-      hint="Tự tạo cạnh credentials.json khi xác thực lần đầu — không cần chọn")
-_srow(8, "VideoSubFinder path:", s_vsf_var,
+_srow(6, "VideoSubFinder path:", s_vsf_var,
       pick_fn=lambda: s_vsf_var.set(filedialog.askopenfilename(
           title="Chọn VideoSubFinderWXW_intel.exe",
           filetypes=[("EXE","*.exe")])),
       hint="Ví dụ: D:\\VideoSubFinder_6.10_x64\\Release_x64\\VideoSubFinderWXW_intel.exe")
-_srow(10, "OCR threads:",        s_threads_var,
+_srow(8, "OCR threads:",        s_threads_var,
       hint="Số luồng xử lý song song (mặc định 20, tối đa ~50)")
+
+# Checkboxes cho delete_raw_texts, delete_texts, nen_raw_texts
+cb_frame = ttk.LabelFrame(t3, text="Tùy chọn dọn dẹp & Tối ưu hệ thống")
+cb_frame.grid(row=10, column=0, columnspan=3, padx=8, pady=10, sticky="ew")
+
+ttk.Checkbutton(cb_frame, text="Tự động xóa folder raw_texts (chứa file text thô từ OCR) sau khi chạy xong",
+                variable=s_del_raw_var).pack(anchor="w", padx=6, pady=3)
+ttk.Checkbutton(cb_frame, text="Tự động xóa folder texts (chứa file srt nhỏ đã dịch) sau khi chạy xong",
+                variable=s_del_txt_var).pack(anchor="w", padx=6, pady=3)
+ttk.Checkbutton(cb_frame, text="Tự động nén folder raw_texts thành file raw_texts.zip sau khi chạy xong",
+                variable=s_zip_raw_var).pack(anchor="w", padx=6, pady=3)
 
 t3.columnconfigure(1, weight=1)
 
-def save_settings():
+# Hàm tự động lưu mỗi khi có thay đổi
+_init_done = False
+
+def auto_save_settings(*args):
+    if not _init_done:
+        return
     try:
-        threads = int(s_threads_var.get())
-        if threads < 1: raise ValueError
+        t_str = s_threads_var.get().strip()
+        threads = int(t_str) if t_str else 20
+        if threads < 1: threads = 20
     except ValueError:
-        messagebox.showerror("Lỗi", "Threads phải là số nguyên dương."); return
+        threads = 20
 
     cfg = C.load()
-
     cfg["folder_id"]        = s_folder_var.get().strip()
     cfg["credentials_file"] = s_cred_var.get().strip()
     cfg["vsf_path"]         = s_vsf_var.get().strip()
     cfg["threads"]          = threads
+    cfg["delete_raw_texts"] = s_del_raw_var.get()
+    cfg["delete_texts"]     = s_del_txt_var.get()
+    cfg["nen_raw_texts"]    = s_zip_raw_var.get()
     C.save(cfg)
 
-    # Cảnh báo nếu folder_id trống khi lưu
-    if not cfg["folder_id"]:
-        log("⚠️ Folder ID trống — ảnh OCR sẽ upload lên thư mục gốc My Drive.")
-        messagebox.showwarning(
-            "Thiếu Drive Folder ID",
-            "Bạn chưa điền Drive Folder ID.\n\n"
-            "Ảnh OCR sẽ được upload lên thư mục gốc (My Drive).\n"
-        )
-    else:
-        log("✅ Settings đã lưu.")
-        messagebox.showinfo("Saved", "Settings đã được lưu và đồng bộ file xác thực.")
+# Đăng ký các trace để tự lưu
+s_folder_var.trace_add("write", auto_save_settings)
+s_cred_var.trace_add("write", auto_save_settings)
+s_vsf_var.trace_add("write", auto_save_settings)
+s_threads_var.trace_add("write", auto_save_settings)
+s_del_raw_var.trace_add("write", auto_save_settings)
+s_del_txt_var.trace_add("write", auto_save_settings)
+s_zip_raw_var.trace_add("write", auto_save_settings)
 
 def open_settings_file():
     """Mở settings.json bằng trình soạn thảo mặc định của OS."""
@@ -1007,10 +1043,16 @@ def reset_token():
     else:
         messagebox.showinfo("Thông báo", f"Không tìm thấy file token tại:\n{tok}")
 
-sf = ttk.Frame(t3); sf.grid(row=11, column=0, columnspan=3, pady=12, padx=6, sticky="w")
-ttk.Button(sf, text="💾 Lưu Settings",       command=save_settings).pack(side="left", padx=4)
+sf = ttk.Frame(t3); sf.grid(row=12, column=0, columnspan=3, pady=12, padx=6, sticky="w")
 ttk.Button(sf, text="📂 Mở settings.json",   command=open_settings_file).pack(side="left", padx=4)
-ttk.Button(sf, text="🔑 Reset token (đăng nhập lại)", command=reset_token).pack(side="left", padx=4)
+ttk.Button(sf, text="🔑 Reset token", command=reset_token).pack(side="left", padx=4)
+
+# Dòng chữ giải thích nhỏ và mờ dưới nút Reset Token
+lbl_reset_brief = ttk.Label(t3, text="* Nhấn Reset token sẽ yêu cầu đăng nhập lại tài khoản Google ở lần chạy OCR tiếp theo.",
+                            foreground="#888888", font=("Helvetica", 8))
+lbl_reset_brief.grid(row=13, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 10))
+
+_init_done = True
 
 # ─ Status + progress (dùng chung cả 3 tab) ───────────────────────────────────
 bot = ttk.Frame(root); bot.pack(fill="x", padx=8, pady=(2, 2))

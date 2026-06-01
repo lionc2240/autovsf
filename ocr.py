@@ -212,6 +212,14 @@ def run(images_dir: str, srt_out: str,
                       for i in sorted(C.state.srt_entries))
         srt_path.write_text(srt, encoding="utf-8")
 
+        # Nén raw_texts trước khi dọn dẹp (nếu bật cấu hình nén)
+        if cfg.get("nen_raw_texts", False) and raw_dir.exists():
+            try:
+                shutil.make_archive(str(workdir / "raw_texts"), 'zip', root_dir=str(workdir), base_dir="raw_texts")
+                log("📦 Đã nén thư mục raw_texts thành raw_texts.zip")
+            except Exception as e:
+                log(f"❌ Không thể nén raw_texts: {e}")
+
         # Dọn dẹp thư mục tạm
         for flag, d in ((delete_raw, raw_dir), (delete_texts, txt_dir)):
             if flag and d.exists():
