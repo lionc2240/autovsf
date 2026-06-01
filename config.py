@@ -25,10 +25,7 @@ DEFAULT: dict = {
     "delete_texts":       False,
     "nen_raw_texts":      False,
     "crop_profiles": {
-        "vlxx_javhd": {"top": 0.1692, "bottom": 0.0058, "left": 0.0,    "right": 1.0   },
-        "sextop":     {"top": 0.3052, "bottom": 0.0545, "left": 0.0,    "right": 1.0   },
-        "phimkk":     {"top": 0.1861, "bottom": 0.0198, "left": 0.0,    "right": 1.0   },
-        "titdam":     {"top": 0.2455, "bottom": 0.0746, "left": 0.1743, "right": 0.8322},
+        "default":    {"top": 0.2102, "bottom": 0.0000, "left": 0.0,    "right": 1.0   },
     },
 }
 

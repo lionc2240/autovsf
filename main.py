@@ -169,6 +169,11 @@ def run_vsf():
 
     log(f"✂️  Crop [{profile_key}]: te={top}  be={bottom}  le={left}  re={right}")
 
+    # Ghi nhớ profile vừa dùng
+    _cfg = C.load()
+    _cfg["last_profile"] = profile_key
+    C.save(_cfg)
+
     cmd = [
         vsf,
         "-c",              # clear dirs
@@ -183,6 +188,7 @@ def run_vsf():
 
     log(f"🔧 Lệnh: {' '.join(cmd)}")
 
+    C.state.stop_event.clear()   # reset flag trước khi chạy mới
     btn_vsf.config(state="disabled"); btn_vsf_stop.config(state="normal")
 
     def _go():
@@ -193,22 +199,32 @@ def run_vsf():
         _vsf_proc = None
         rbg_out = rbg_dir                                            # capture
         srt_out = os.path.join(out_dir, Path(video).stem + ".srt")  # SRT trong _out/
-        root.after(0, lambda: (
-            btn_vsf.config(state="normal"), btn_vsf_stop.config(state="disabled"),
-            status.config(text="VSF hoàn thành."),
-            bar.config(value=100),
-            log("✅ VSF xong."),
-            images_var.set(rbg_out),   # tự điền thư mục ảnh sang tab OCR
-            srt_var.set(srt_out),      # tự điền đường dẫn SRT
-            nb.select(1),              # chuyển sang tab OCR
-        ))
+        stopped = C.state.stop_event.is_set()  # True nếu user bấm Dừng VSF
+
+        def _vsf_done(was_stopped=stopped):
+            btn_vsf.config(state="normal"); btn_vsf_stop.config(state="disabled")
+            if was_stopped:
+                status.config(text="⏹ VSF đã dừng.")
+                log("⏹ VSF đã dừng — không chuyển tab.")
+                return  # không chuyển tab, không auto OCR
+            status.config(text="✅ VSF xong.")
+            bar.config(value=100)
+            log("✅ VSF xong.")
+            images_var.set(rbg_out)
+            srt_var.set(srt_out)
+            nb.select(1)
+            if auto_ocr_var.get():
+                log("⚡ Tự động chạy OCR...")
+                run_ocr()
+
+        root.after(0, _vsf_done)
     threading.Thread(target=_go, daemon=True).start()
 
 def stop_vsf():
     global _vsf_proc
+    C.state.stop_event.set()   # đánh dấu bị dừng thủ công
     if _vsf_proc and _vsf_proc.poll() is None:
         try:
-            # Kill cả cây process (VSF có thể spawn child)
             parent = psutil.Process(_vsf_proc.pid)
             for child in parent.children(recursive=True):
                 child.kill()
@@ -233,26 +249,17 @@ def run_ocr():
     if not os.path.isfile(cred):
         messagebox.showerror("Cấu hình", "Chưa chọn file credentials.json hoặc file không tồn tại.\nVui lòng kiểm tra lại trong tab Settings."); return
 
-    # Lấy folder_id từ config (Sync từ tab Settings)
+    # Lấy folder_id từ config
     folder_id = cfg.get("folder_id", "").strip()
     C.state.folder_id = folder_id
 
-    if not folder_id:
+    # Chỉ nhắc lần đầu chưa có token (chưa đăng nhập Google lần nào)
+    if not os.path.exists(C.token_file()):
         if not messagebox.askokcancel(
-            "Xác nhận tải lên",
-            "Drive Folder ID đang trống.\n\n"
-            "Ảnh sẽ được upload lên thư mục gốc (My Drive) của tài khoản Google.\n"
-            "Lưu ý: Bạn hãy chọn đúng tài khoản Google mà bạn đã dùng để tạo credentials.json khi được yêu cầu đăng nhập.\n\n"
-            "Tiếp tục?"
-        ):
-            return
-    
-    # Nếu có folder_id, cũng nhắc user nếu chưa có token (lần đầu dùng)
-    elif not os.path.exists(cfg.get("token_file", "token.json")):
-         if not messagebox.askokcancel(
             "Xác nhận tài khoản",
-            "Đây là lần đầu bạn chạy OCR hoặc token đã bị xoá.\n\n"
-            "Lưu ý: Bạn hãy chọn đúng tài khoản Google mà bạn đã dùng để tạo credentials.json khi được yêu cầu đăng nhập.\n\n"
+            "Đây là lần đầu chạy OCR hoặc token đã bị xoá.\n\n"
+            "Trình duyệt sẽ mở để đăng nhập Google — hãy chọn đúng tài khoản\n"
+            "đã dùng để tạo credentials.json.\n\n"
             "Tiếp tục?"
         ):
             return
@@ -348,6 +355,16 @@ class CropSelector:
                      font=("Consolas", 10, "bold"), bg="#333333", fg=color,
                      readonlybackground="#333333").pack(side=tk.LEFT, padx=1)
         ttk.Button(pf, text="✅ Xác nhận", command=self._confirm).pack(side=tk.LEFT, padx=14)
+
+        # Lưu thành profile
+        tk.Label(pf, text="│", fg="#555555", bg="#222222").pack(side=tk.LEFT, padx=4)
+        tk.Label(pf, text="Lưu profile:", fg="#AAAAAA", bg="#222222",
+                 font=("Helvetica", 9)).pack(side=tk.LEFT, padx=(4, 2))
+        self.profile_name_var = tk.StringVar(value="custom")
+        tk.Entry(pf, textvariable=self.profile_name_var, width=12,
+                 font=("Consolas", 10), bg="#333333", fg="#FFFFFF",
+                 insertbackground="#FFFFFF").pack(side=tk.LEFT, padx=2)
+        ttk.Button(pf, text="💾 Lưu", command=self._save_profile).pack(side=tk.LEFT, padx=4)
 
         # Hướng dẫn
         tk.Label(pf, text="Kéo đường để điều chỉnh vùng subtitle",
@@ -555,7 +572,6 @@ class CropSelector:
             except Exception:
                 pass
 
-    def _decode_async(self): pass  # không dùng nữa
 
     def _render_frame(self, frame, frame_idx):
         """Nhận frame đã decode, render lên canvas (main thread)."""
@@ -599,6 +615,36 @@ class CropSelector:
         self.left_var.set(  f"{self.left_x  / self.vw:.4f}")
         self.right_var.set( f"{self.right_x / self.vw:.4f}")
 
+    def _save_profile(self):
+        name = self.profile_name_var.get().strip().lower().replace(" ", "_")
+        if not name:
+            messagebox.showwarning("Tên trống", "Nhập tên profile trước khi lưu.")
+            return
+        try:
+            vals = {
+                "top":    float(self.top_var.get()),
+                "bottom": float(self.bottom_var.get()),
+                "left":   float(self.left_var.get()),
+                "right":  float(self.right_var.get()),
+            }
+        except ValueError:
+            messagebox.showwarning("Chưa chọn", "Kéo ít nhất một đường trước khi lưu.")
+            return
+
+        cfg = C.load()
+        is_new = name not in cfg["crop_profiles"]
+        cfg["crop_profiles"][name] = vals
+        C.save(cfg)
+
+        # Cập nhật combobox và chọn profile vừa lưu
+        new_values = list(C.load()["crop_profiles"].keys())
+        combo_profile["values"] = new_values
+        profile_var.set(name)
+        _refresh_crop_label()
+
+        action = "Đã thêm" if is_new else "Đã cập nhật"
+        log(f"💾 {action} profile '{name}': top={vals['top']:.4f}  bottom={vals['bottom']:.4f}  left={vals['left']:.4f}  right={vals['right']:.4f}")
+
     def _confirm(self):
         try:
             self.on_confirm(
@@ -629,31 +675,19 @@ def open_crop_selector():
         video_var.set(video)
 
     def _apply(top, bottom, left, right):
-        import traceback
         try:
             cfg = C.load()
-            log(f"🔍 Trước save: profiles = {list(cfg['crop_profiles'].keys())}")
-
             cfg["crop_profiles"]["custom"] = {"top": top, "bottom": bottom,
                                               "left": left, "right": right}
             C.save(cfg)
-            log(f"🔍 Đã gọi C.save()")
-
-            # Đọc lại ngay để xác nhận
-            cfg2 = C.load()
-            log(f"🔍 Sau save: profiles = {list(cfg2['crop_profiles'].keys())}")
-            custom_val = cfg2["crop_profiles"].get("custom")
-            log(f"🔍 custom = {custom_val}")
-
-            # Update combobox TRƯỚC khi set profile_var (readonly sẽ reject nếu không có)
-            new_values = list(cfg2["crop_profiles"].keys())
+            new_values = list(C.load()["crop_profiles"].keys())
             combo_profile["values"] = new_values
             profile_var.set("custom")
             _refresh_crop_label()
             log(f"✅ Crop lưu: top={top:.4f}  bottom={bottom:.4f}  left={left:.4f}  right={right:.4f}")
         except Exception as e:
-            log(f"❌ Lỗi trong _apply: {e}")
-            log(traceback.format_exc())
+            import traceback
+            log(f"❌ Lỗi lưu crop: {e}\n{traceback.format_exc()}")
 
     CropSelector(video, _apply)
 
@@ -676,7 +710,12 @@ nb.bind("<<NotebookTabChanged>>", _on_tab_changed)
 # Tab 1: VideoSubFinder
 t1 = ttk.Frame(nb); nb.add(t1, text="① VideoSubFinder")
 video_var   = tk.StringVar()
-profile_var = tk.StringVar(value="vlxx_javhd")
+cfg0        = C.load()
+_last       = cfg0.get("last_profile", "default")
+# Fallback về "default" nếu profile đã bị xóa
+if _last not in cfg0.get("crop_profiles", {}):
+    _last = "default"
+profile_var = tk.StringVar(value=_last)
 
 ttk.Label(t1, text="File video:").grid(row=0, column=0, sticky="w", padx=6, pady=4)
 ttk.Entry(t1, textvariable=video_var, width=52).grid(row=0, column=1, padx=4)
@@ -686,7 +725,6 @@ ttk.Button(t1, text="…", width=3,
            )).grid(row=0, column=2, padx=2)
 
 ttk.Label(t1, text="Crop profile:").grid(row=1, column=0, sticky="w", padx=6)
-cfg0 = C.load()
 combo_profile = ttk.Combobox(t1, textvariable=profile_var, width=20,
                               values=list(cfg0["crop_profiles"].keys()), state="readonly")
 combo_profile.grid(row=1, column=1, sticky="w", padx=4)
@@ -735,6 +773,11 @@ btn_vsf      = ttk.Button(t1, text="▶ Chạy VSF",  command=run_vsf)
 btn_vsf.grid(row=4, column=0, padx=6, pady=10)
 btn_vsf_stop = ttk.Button(t1, text="⏹ Dừng VSF", command=stop_vsf, state="disabled")
 btn_vsf_stop.grid(row=4, column=1, pady=10)
+
+auto_ocr_var = tk.BooleanVar(value=True)
+ttk.Checkbutton(t1, text="⚡ Tự động chạy OCR ngay sau khi VSF xong",
+                variable=auto_ocr_var).grid(row=5, column=0, columnspan=3,
+                                            sticky="w", padx=6, pady=(0, 4))
 
 # Tab 2: OCR
 t2 = ttk.Frame(nb); nb.add(t2, text="② OCR → SRT")
@@ -878,8 +921,17 @@ def save_settings():
     cfg["threads"]          = threads
     C.save(cfg)
 
-    log("✅ Settings đã lưu.")
-    messagebox.showinfo("Saved", "Settings đã được lưu và đồng bộ file xác thực.")
+    # Cảnh báo nếu folder_id trống khi lưu
+    if not cfg["folder_id"]:
+        log("⚠️ Folder ID trống — ảnh OCR sẽ upload lên thư mục gốc My Drive.")
+        messagebox.showwarning(
+            "Thiếu Drive Folder ID",
+            "Bạn chưa điền Drive Folder ID.\n\n"
+            "Ảnh OCR sẽ được upload lên thư mục gốc (My Drive).\n"
+        )
+    else:
+        log("✅ Settings đã lưu.")
+        messagebox.showinfo("Saved", "Settings đã được lưu và đồng bộ file xác thực.")
 
 def open_settings_file():
     """Mở settings.json bằng trình soạn thảo mặc định của OS."""
@@ -913,6 +965,15 @@ bar = ttk.Progressbar(bot, maximum=100); bar.pack(fill="x", pady=2)
 
 log_box = scrolledtext.ScrolledText(root, state="disabled", height=10, font=("Consolas", 9))
 log_box.pack(fill="both", expand=True, padx=8, pady=(0,6))
+
+def _on_exit():
+    if messagebox.askokcancel("Thoát", "Bạn có chắc muốn thoát?"):
+        if C.state.observer:
+            try: C.state.observer.stop()
+            except Exception: pass
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", _on_exit)
 
 if __name__ == "__main__":
     root.mainloop()
