@@ -247,7 +247,7 @@ def run_ocr():
     # Kiểm tra credentials.json
     cred = cfg.get("credentials_file", "credentials.json")
     if not os.path.isfile(cred):
-        messagebox.showerror("Cấu hình", "Chưa chọn file credentials.json hoặc file không tồn tại.\nVui lòng kiểm tra lại trong tab Settings."); return
+        messagebox.showerror("Cấu hình", "Chưa chọn file credentials.json hoặc file không tồn tại.\nVui lòng kiểm tra lại trong tab Settings\nSau đó nhấn quay lại đây và nhấn 'Chạy OCR'."); return
 
     # Lấy folder_id từ config
     folder_id = cfg.get("folder_id", "").strip()
@@ -827,14 +827,6 @@ s_threads_var = tk.StringVar(value=str(s_cfg.get("threads", 20)))
 
 # Trace hiển thị đường dẫn tuyệt đối cho credentials
 s_cred_abs_var = tk.StringVar()
-def _update_cred_abs(*_):
-    path = s_cred_var.get().strip()
-    if path:
-        s_cred_abs_var.set(os.path.abspath(path))
-    else:
-        s_cred_abs_var.set("—")
-s_cred_var.trace_add("write", _update_cred_abs)
-_update_cred_abs()
 
 def browse_drive_folder():
     import webbrowser
@@ -869,23 +861,101 @@ def browse_drive_folder():
 _srow(0, "Drive Folder ID:",    s_folder_var,
       pick_fn=browse_drive_folder, clear_btn=True,
       hint="Lấy từ URL Drive: drive.google.com/drive/folders/<ID>")
-_srow(2, "credentials.json:",   s_cred_var,
-      pick_fn=lambda: s_cred_var.set(filedialog.askopenfilename(
-          title="Chọn credentials.json",
-          filetypes=[("JSON","*.json")])),
-      hint="Tải từ Google Cloud Console → APIs & Services → Credentials")
-# Hiển thị absolute path (style giống Output ở Tab 1)
-ttk.Label(t3, text="Path hiện tại:", foreground="#0055cc").grid(row=4, column=0, sticky="w", padx=20)
-ttk.Entry(t3, textvariable=s_cred_abs_var, width=48, state="readonly", foreground="#666666").grid(row=4, column=1, padx=4, sticky="ew")
 
-_srow(5, "token.json:",         s_token_var,
+# --- credentials.json: ẩn cho tới khi user chọn file hợp lệ ---
+_cred_label = ttk.Label(t3, text="credentials.json:")
+_cred_label.grid(row=2, column=0, sticky="w", padx=8, pady=5)
+
+_cred_entry = ttk.Entry(t3, textvariable=s_cred_var, width=48)
+
+# Frame chứa nút Browse
+_cred_btn_f = ttk.Frame(t3)
+_cred_btn_f.grid(row=2, column=2, padx=2, sticky="w")
+
+# Hint khi chưa chọn
+_cred_hint = ttk.Label(t3, text="Tải từ Google Cloud Console → APIs & Services → Credentials",
+                        foreground="#888888", font=("Helvetica", 8))
+_cred_hint.grid(row=3, column=1, sticky="w", padx=4, pady=(0,2))
+
+# Row 4: path hiện tại + trạng thái (ẩn mặc định)
+_cred_path_label = ttk.Label(t3, text="Path hiện tại:", foreground="#0055cc")
+_cred_path_entry = ttk.Entry(t3, textvariable=s_cred_abs_var, width=48,
+                              state="readonly", foreground="#666666")
+_cred_status = ttk.Label(t3, text="", foreground="#228B22", font=("Helvetica", 8))
+
+def _show_cred_status():
+    """Hiện ô path + dòng trạng thái xanh khi file hợp lệ."""
+    _cred_entry.grid(row=2, column=1, padx=4, sticky="ew")
+    _cred_path_label.grid(row=4, column=0, sticky="w", padx=20)
+    _cred_path_entry.grid(row=4, column=1, padx=4, sticky="ew")
+    _cred_status.grid(row=5, column=1, sticky="w", padx=4, pady=(0,2))
+
+def _hide_cred_status():
+    """Ẩn ô path + trạng thái."""
+    _cred_entry.grid_forget()
+    _cred_path_label.grid_forget()
+    _cred_path_entry.grid_forget()
+    _cred_status.grid_forget()
+
+def _update_cred_display(*_):
+    """Cập nhật hiển thị dựa trên trạng thái hiện tại của s_cred_var."""
+    path = s_cred_var.get().strip()
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    target_cred = os.path.join(root_dir, C.DEFAULT_CLIENT_SECRET)
+
+    if path and os.path.isfile(path):
+        abs_path = os.path.abspath(path)
+        s_cred_abs_var.set(abs_path)
+        _show_cred_status()
+        if os.path.abspath(path) == os.path.abspath(target_cred):
+            _cred_status.config(text="✔ Đã hợp lệ — file nằm tại thư mục dự án")
+        else:
+            _cred_status.config(text="✔ Đã chọn — file sẽ được copy vào dự án khi Lưu")
+    elif path and os.path.isfile(target_cred):
+        # Trường hợp path ngắn gọn (chỉ tên file) và file đã tồn tại ở root
+        s_cred_abs_var.set(os.path.abspath(target_cred))
+        _show_cred_status()
+        _cred_status.config(text="✔ Đã hợp lệ — file nằm tại thư mục dự án")
+    else:
+        s_cred_abs_var.set("")
+        _hide_cred_status()
+
+def _browse_credentials():
+    """Cho user chọn file, copy ngay vào dự án, cập nhật UI."""
+    import shutil
+    chosen = filedialog.askopenfilename(
+        title="Chọn credentials.json",
+        filetypes=[("JSON", "*.json")])
+    if not chosen:
+        return
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    target_cred = os.path.join(root_dir, C.DEFAULT_CLIENT_SECRET)
+    # Copy nếu file ở nơi khác
+    if os.path.abspath(chosen) != os.path.abspath(target_cred):
+        try:
+            shutil.copy2(chosen, target_cred)
+            log(f"📋 Đã copy credentials.json vào thư mục dự án.")
+        except Exception as e:
+            log(f"❌ Không thể copy credentials: {e}")
+            messagebox.showerror("Lỗi", f"Không thể copy file:\n{e}")
+            return
+    s_cred_var.set(C.DEFAULT_CLIENT_SECRET)
+    _update_cred_display()
+
+ttk.Button(_cred_btn_f, text="…", width=3, command=_browse_credentials).pack(side="left", padx=1)
+
+# Khởi tạo: kiểm tra trạng thái ban đầu
+_update_cred_display()
+
+
+_srow(6, "token.json:",         s_token_var,
       hint="Tự tạo cạnh credentials.json khi xác thực lần đầu — không cần chọn")
-_srow(7, "VideoSubFinder path:", s_vsf_var,
+_srow(8, "VideoSubFinder path:", s_vsf_var,
       pick_fn=lambda: s_vsf_var.set(filedialog.askopenfilename(
           title="Chọn VideoSubFinderWXW_intel.exe",
           filetypes=[("EXE","*.exe")])),
       hint="Ví dụ: D:\\VideoSubFinder_6.10_x64\\Release_x64\\VideoSubFinderWXW_intel.exe")
-_srow(9, "OCR threads:",        s_threads_var,
+_srow(10, "OCR threads:",        s_threads_var,
       hint="Số luồng xử lý song song (mặc định 20, tối đa ~50)")
 
 t3.columnconfigure(1, weight=1)
@@ -898,22 +968,6 @@ def save_settings():
         messagebox.showerror("Lỗi", "Threads phải là số nguyên dương."); return
 
     cfg = C.load()
-    
-    # Xử lý copy credentials.json về thư mục gốc nếu chọn file từ nơi khác
-    import shutil
-    new_cred_path = s_cred_var.get().strip()
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    target_cred = os.path.join(root_dir, C.DEFAULT_CLIENT_SECRET)
-    
-    if new_cred_path and os.path.isfile(new_cred_path):
-        # Nếu path chọn khác với file tại root, thì tiến hành copy
-        if os.path.abspath(new_cred_path) != os.path.abspath(target_cred):
-            try:
-                shutil.copy2(new_cred_path, target_cred)
-                s_cred_var.set(C.DEFAULT_CLIENT_SECRET) # Set lại tên file ngắn gọn
-                log(f"📋 Đã copy credentials.json vào thư mục dự án.")
-            except Exception as e:
-                log(f"❌ Không thể copy credentials: {e}")
 
     cfg["folder_id"]        = s_folder_var.get().strip()
     cfg["credentials_file"] = s_cred_var.get().strip()

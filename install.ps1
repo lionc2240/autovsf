@@ -12,6 +12,8 @@ $RepoUrl  = "https://github.com/lionc2240/autovsf.git"
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Dang cai Git..." -ForegroundColor Yellow
     winget install --id Git.Git -e --source winget --accept-source-agreements --accept-package-agreements
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + 
+                [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 
 # 2. Cài Python 3.12
