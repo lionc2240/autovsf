@@ -62,75 +62,80 @@ if (Test-Path $vsfExe) {
 } else {
     Write-Host "[..] Thieu VideoSubFinder -> Dang tai tu Github Release..." -ForegroundColor Yellow
     
-    # Hàm vẽ progress bar
-    function Draw-ProgressBar ($bytesWritten, $totalBytes) {
-        $percent = [Math]::Min(100, [Math]::Max(0, [int](($bytesWritten / $totalBytes) * 100)))
-        $barWidth = 22
-        $filledWidth = [int]($percent * $barWidth / 100)
-        $unfilledWidth = $barWidth - $filledWidth
-        
-        $bar = ("█" * $filledWidth) + ("░" * $unfilledWidth)
-        $writtenMB = ($bytesWritten / 1MB).ToString("F1")
-        $totalMB = ($totalBytes / 1MB).ToString("F1")
-        
-        $status = "  [..] [$bar] $("{0,3}"-f $percent)% $writtenMB`M / $totalMB`M"
-        [Console]::Write("`r" + $status.PadRight([Console]::WindowWidth - 1))
+    $downloaded = $false
+    
+    # 1. Thử dùng curl.exe (Tích hợp sẵn trong Windows 10/11)
+    if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+        Write-Host "  [..] Dang tai bang curl.exe..." -ForegroundColor Yellow
+        curl.exe -L -o $vsfZipFile $vsfZipUrl
+        if ($LASTEXITCODE -eq 0 -and (Test-Path $vsfZipFile) -and (Get-Item $vsfZipFile).Length -gt 10MB) {
+            $downloaded = $true
+            Write-Host "  [OK] Tai bang curl.exe thanh cong!" -ForegroundColor Green
+        }
     }
-
-    try {
-        # Bật bảo mật TLS để tải an toàn từ Github
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        
-        # Lấy dung lượng thật từ server trước
-        $req = [System.Net.WebRequest]::Create($vsfZipUrl)
-        $req.UserAgent = "Mozilla/5.0"
-        $req.Method = "HEAD"
-        $resp = $req.GetResponse()
-        $totalBytes = [int64]$resp.ContentLength
-        $resp.Close()
-        if ($totalBytes -le 0) { $totalBytes = 49053912 }
-        $totalMB = ($totalBytes / 1MB).ToString("F1")
-        Write-Host "  [..] File: $totalMB MB - Dang tai..." -ForegroundColor Yellow
-        
-        # Tải file với progress bar
-        $webClient = New-Object System.Net.WebClient
-        $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
-        
-        $onProgress = {
-            param($sender, $e)
-            Draw-ProgressBar $e.BytesReceived $e.TotalBytesToReceive
+    
+    # 2. Thử dùng Invoke-WebRequest (Dự phòng 1)
+    if (-not $downloaded) {
+        Write-Host "  [..] curl.exe that bai hoac khong co. Thu dung Invoke-WebRequest..." -ForegroundColor Yellow
+        try {
+            # Set TLS 1.2/1.3 bằng số nguyên để tránh lỗi enum trên máy cũ
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor 3072
+            
+            $oldProgress = $ProgressPreference
+            $ProgressPreference = 'SilentlyContinue'
+            
+            Invoke-WebRequest -Uri $vsfZipUrl -OutFile $vsfZipFile -UseBasicParsing
+            
+            $ProgressPreference = $oldProgress
+            if ((Test-Path $vsfZipFile) -and (Get-Item $vsfZipFile).Length -gt 10MB) {
+                $downloaded = $true
+                Write-Host "  [OK] Tai bang Invoke-WebRequest thanh cong!" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "  [❌] Invoke-WebRequest that bai: $($_.Exception.Message)" -ForegroundColor Red
         }
-        $webClient.add_DownloadProgressChanged($onProgress)
-        
-        $asyncTask = $webClient.DownloadFileTaskAsync($vsfZipUrl, $vsfZipFile)
-        $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        while (-not $asyncTask.IsCompleted) {
-            if ($sw.Elapsed.TotalMinutes -ge 10) { throw "Qua thoi gian cho (10 phut)" }
-            Start-Sleep -Milliseconds 200
+    }
+    
+    # 3. Thử dùng WebClient đồng bộ (Dự phòng cuối - không dùng event bất đồng bộ để tránh crash luồng)
+    if (-not $downloaded) {
+        Write-Host "  [..] Thu dung WebClient dong bo..." -ForegroundColor Yellow
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor 3072
+            $webClient = New-Object System.Net.WebClient
+            $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
+            $webClient.DownloadFile($vsfZipUrl, $vsfZipFile)
+            if ((Test-Path $vsfZipFile) -and (Get-Item $vsfZipFile).Length -gt 10MB) {
+                $downloaded = $true
+                Write-Host "  [OK] Tai bang WebClient thanh cong!" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "  [❌] WebClient that bai: $($_.Exception.Message)" -ForegroundColor Red
         }
-        if ($asyncTask.IsFaulted) { throw $asyncTask.Exception.InnerException }
-        
-        # Hoàn tất thanh tiến trình
-        $bar = "█" * 22
-        [Console]::Write("`r  [OK] [$bar] 100% $totalMB`M / $totalMB`M`n")
-        
-        # Giải nén tự động vào program\VideoSubFinder_6.10_x64
-        Write-Host "[..] Dang giai nen VideoSubFinder..." -ForegroundColor Yellow
-        $extractDir = Join-Path $vsfDir "VideoSubFinder_6.10_x64"
-        if (-not (Test-Path $extractDir)) {
-            New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+    }
+    
+    if ($downloaded) {
+        try {
+            # Giải nén tự động vào program\VideoSubFinder_6.10_x64
+            Write-Host "[..] Dang giai nen VideoSubFinder..." -ForegroundColor Yellow
+            $extractDir = Join-Path $vsfDir "VideoSubFinder_6.10_x64"
+            if (-not (Test-Path $extractDir)) {
+                New-Item -ItemType Directory -Force -Path $extractDir | Out-Null
+            }
+            Expand-Archive -Path $vsfZipFile -DestinationPath $extractDir -Force
+            Remove-Item -Path $vsfZipFile -Force
+            
+            if (Test-Path $vsfExe) {
+                Write-Host "[OK] Giai nen thanh cong! Da kich hoat VideoSubFinder." -ForegroundColor Green
+            } else {
+                Write-Host "[❌] Canh bao: File chay van thieu sau khi giai nen!" -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "[❌] Giai nen that bai: $($_.Exception.Message)" -ForegroundColor Red
         }
-        Expand-Archive -Path $vsfZipFile -DestinationPath $extractDir -Force
-        Remove-Item -Path $vsfZipFile -Force
-        
-        if (Test-Path $vsfExe) {
-            Write-Host "[OK] Giai nen thanh cong! Da kich hoat VideoSubFinder." -ForegroundColor Green
-        } else {
-            Write-Host "[❌] Canh bao: File chay van thieu sau khi giai nen!" -ForegroundColor Red
-        }
-    } catch {
-        Write-Host "`r[❌] Tai VideoSubFinder that bai!" -ForegroundColor Red
-        Write-Host "Loi: $($_.Exception.Message)" -ForegroundColor DarkGray
+    } else {
+        Write-Host "[❌] Tai VideoSubFinder that bai hoan toan bang moi phuong thuc!" -ForegroundColor Red
+        Write-Host "Vui long tu tai file zip tai link: $vsfZipUrl" -ForegroundColor White
+        Write-Host "Sau do giai nen vao thu muc: program/VideoSubFinder_6.10_x64" -ForegroundColor White
     }
 }
 Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray
