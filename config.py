@@ -19,7 +19,7 @@ DEFAULT: dict = {
     "folder_id":          "",
     "credentials_file":   DEFAULT_CLIENT_SECRET,
     "token_file":         DEFAULT_TOKEN_FILE,
-    "vsf_path":           r"D:\VideoSubFinder_6.10_x64\Release_x64\VideoSubFinderWXW_intel.exe",
+    "vsf_path":           r"program\VideoSubFinder_6.10_x64\Release_x64\VideoSubFinderWXW_intel.exe",
     "threads":            20,
     "delete_raw_texts":   False,
     "delete_texts":       False,
