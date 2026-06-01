@@ -54,16 +54,18 @@ if (-not (Test-Path $vsfDir)) {
 
 Write-Host "`n────────────────────────────────────────" -ForegroundColor DarkGray
 Write-Host "[..] Dang kiem tra VideoSubFinder..." -ForegroundColor Cyan
+$osArch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
+Write-Host "  [OK] Environment: Windows ($osArch)" -ForegroundColor Green
 
 if (Test-Path $vsfExe) {
     Write-Host "[OK] VideoSubFinderWXW_intel.exe da co san!" -ForegroundColor Green
 } else {
-    Write-Host "[..] Thieu VideoSubFinder -> Bat dau tai tu Github Release (46.8 MB)..." -ForegroundColor Yellow
+    Write-Host "[..] Thieu VideoSubFinder -> Dang tai tu Github Release..." -ForegroundColor Yellow
     
     # Hàm vẽ progress bar
     function Draw-ProgressBar ($bytesWritten, $totalBytes) {
         $percent = [Math]::Min(100, [Math]::Max(0, [int](($bytesWritten / $totalBytes) * 100)))
-        $barWidth = 30
+        $barWidth = 22
         $filledWidth = [int]($percent * $barWidth / 100)
         $unfilledWidth = $barWidth - $filledWidth
         
@@ -71,7 +73,7 @@ if (Test-Path $vsfExe) {
         $writtenMB = ($bytesWritten / 1MB).ToString("F1")
         $totalMB = ($totalBytes / 1MB).ToString("F1")
         
-        $status = "[..] [$bar] $percent% $writtenMB`M / $totalMB`M"
+        $status = "  [..] [$bar] $("{0,3}"-f $percent)% $writtenMB`M / $totalMB`M"
         [Console]::Write("`r" + $status.PadRight([Console]::WindowWidth - 1))
     }
 
@@ -79,15 +81,21 @@ if (Test-Path $vsfExe) {
         # Bật bảo mật TLS để tải an toàn từ Github
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         
+        # Lấy dung lượng thật từ server trước
+        $req = [System.Net.WebRequest]::Create($vsfZipUrl)
+        $req.UserAgent = "Mozilla/5.0"
+        $req.Method = "HEAD"
+        $resp = $req.GetResponse()
+        $totalBytes = [int64]$resp.ContentLength
+        $resp.Close()
+        if ($totalBytes -le 0) { $totalBytes = 49053912 }
+        $totalMB = ($totalBytes / 1MB).ToString("F1")
+        Write-Host "  [..] File: $totalMB MB - Dang tai..." -ForegroundColor Yellow
+        
+        # Tải file với progress bar
         $webClient = New-Object System.Net.WebClient
         $webClient.Headers.Add("User-Agent", "Mozilla/5.0")
         
-        # Thử lấy size thật trước khi tải
-        $webClient.OpenRead($vsfZipUrl) | Out-Null
-        $totalBytes = [int64]$webClient.ResponseHeaders["Content-Length"]
-        if ($totalBytes -le 0) { $totalBytes = 49053912 }
-        
-        # Event handler khi download dữ liệu
         $onProgress = {
             param($sender, $e)
             Draw-ProgressBar $e.BytesReceived $e.TotalBytesToReceive
@@ -95,16 +103,16 @@ if (Test-Path $vsfExe) {
         $webClient.add_DownloadProgressChanged($onProgress)
         
         $asyncTask = $webClient.DownloadFileTaskAsync($vsfZipUrl, $vsfZipFile)
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
         while (-not $asyncTask.IsCompleted) {
-            Start-Sleep -Milliseconds 100
+            if ($sw.Elapsed.TotalMinutes -ge 10) { throw "Qua thoi gian cho (10 phut)" }
+            Start-Sleep -Milliseconds 200
         }
-        
-        if ($asyncTask.IsFaulted) { throw $asyncTask.Exception }
+        if ($asyncTask.IsFaulted) { throw $asyncTask.Exception.InnerException }
         
         # Hoàn tất thanh tiến trình
-        $bar = "█" * 30
-        $totalMB = ($totalBytes / 1MB).ToString("F1")
-        [Console]::Write("`r" + "[OK] [$bar] 100% $totalMB`M / $totalMB`M`n")
+        $bar = "█" * 22
+        [Console]::Write("`r  [OK] [$bar] 100% $totalMB`M / $totalMB`M`n")
         
         # Giải nén tự động vào program\VideoSubFinder_6.10_x64
         Write-Host "[..] Dang giai nen VideoSubFinder..." -ForegroundColor Yellow
@@ -122,7 +130,7 @@ if (Test-Path $vsfExe) {
         }
     } catch {
         Write-Host "`r[❌] Tai VideoSubFinder that bai!" -ForegroundColor Red
-        Write-Host "Loi: $_" -ForegroundColor DarkGray
+        Write-Host "Loi: $($_.Exception.Message)" -ForegroundColor DarkGray
     }
 }
 Write-Host "────────────────────────────────────────" -ForegroundColor DarkGray

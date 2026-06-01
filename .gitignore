@@ -39,6 +39,7 @@ desktop.ini
 .qwen/
 .claude/
 GEMINI.md
+AGENTS.md
 
 # VideoSubFinder executables (auto-download scripts install.ps1)
 program/
