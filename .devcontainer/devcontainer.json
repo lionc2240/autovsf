@@ -1,4 +1,5 @@
 {
-  "name": "Multi-Repo Environment",
-  "postCreateCommand": "bash clone-repos.sh"
+  "name": "Multi-Repo Workspace",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "postCreateCommand": "bash ./.devcontainer/clone-repos.sh"
 }
