@@ -1,12 +1,14 @@
 # AutoVSF - VideoSubFinder & OCR Pipeline
 
-Công cụ hỗ trợ trích xuất phụ đề cứng từ video thông qua VideoSubFinder và nhận diện chữ (OCR) bằng Google Drive API.
+**[Tiếng Việt](docs/VIE_README.md)**
+
+Extract hardcoded subtitles from videos using VideoSubFinder and OCR via Google Drive API.
 
 ---
 
-## Cài đặt nhanh (One-Click Install)
+## Quick Install (One-Click)
 
-Chỉ cần mở **PowerShell** (với quyền Admin) và dán lệnh sau để tự động cài đặt mọi thứ (Python, Git, thư viện và VideoSubFinder):
+Open **PowerShell** (as Admin) and paste:
 
 ```powershell
 irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
@@ -14,40 +16,38 @@ irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 
 ---
 
-## Hướng dẫn thủ công (Nếu không dùng One-Click)
+## Manual Setup
 
-### 1. Yêu cầu hệ thống
+### 1. Requirements
 - Python ≥ 3.10: `pip install watchdog google-api-python-client oauth2client httplib2 opencv-python psutil Pillow`
-- VideoSubFinder 6.10 (x64): Giải nén vào thư mục `program/` của dự án sao cho đường dẫn chạy là:
+- VideoSubFinder 6.10 (x64): Extract into `program/` so the executable is at:
   `program/VideoSubFinder_6.10_x64/Release_x64/VideoSubFinderWXW_intel.exe`
 
-### 2. Thiết lập Google Cloud (Bắt buộc cho OCR)
-Bạn cần cấu hình Google Drive API để lấy file xác thực `credentials.json` bỏ vào thư mục dự án.
-> Xem chi tiết tại: [Hướng dẫn thiết lập Google Cloud](docs/GOOGLE_SETUP.md)
+### 2. Google Cloud Setup (Required for OCR)
+Configure Google Drive API and place `credentials.json` in the project root.
+> See [Google Cloud Setup Guide](docs/GOOGLE_SETUP.md)
 
-### 3. Chạy chương trình
+### 3. Run
 
-Bạn có thể chọn một trong các cách sau:
-
-- **Trên Windows:** Chạy tệp tin `run.bat`:
+- **Windows:** Double-click `run.bat` or run:
   ```batch
   run.bat
   ```
 
-- **Sử dụng Python trực tiếp:**
+- **Directly with Python:**
   ```powershell
   python main.py
   ```
 
 ---
 
-## 🌟 Các tính năng chính
-- **Tab 1 (VSF):** Chạy VideoSubFinder tự động tách ảnh phụ đề. Hỗ trợ tạo Crop Profile trực quan bằng cách kéo thả chuột.
-- **Tab 2 (OCR):** Tự động tải ảnh lên Google Drive OCR và ghép thành file `.srt` hoàn chỉnh, hiển thị ETA thời gian thực.
-- **Tab 3 (Settings):** Cấu hình linh hoạt, quản lý thông minh trạng thái và đường dẫn của `credentials.json` (tự động copy vào dự án).
+## Features
+- **Tab 1 (VSF):** Run VideoSubFinder to extract subtitle images. Drag-and-drop Crop Profile builder.
+- **Tab 2 (OCR):** Auto-upload images to Google Drive OCR, assemble into `.srt` files with real-time ETA.
+- **Tab 3 (Settings):** Flexible configuration, smart `credentials.json` management.
 
 ---
 
-## ⚠️ Lưu ý quan trọng
-- Lần đầu OCR chạy, trình duyệt sẽ mở trang đăng nhập Google. Hãy chọn đúng tài khoản Google Cloud bạn đã cấu hình.
-- Đảm bảo đã chuyển trạng thái dự án Google sang **Publish App** (Production) trong mục "Audience" trên Google Cloud để tránh lỗi xác thực.
+## Important Notes
+- On first OCR run, the browser will open for Google login. Use the Google Cloud account you configured.
+- Make sure to **Publish App** (Production) under "Audience" in Google Cloud Console to avoid auth errors.

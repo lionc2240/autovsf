@@ -1,35 +1,34 @@
-# Hướng dẫn thiết lập Google Cloud cho AutoVSF
+# Google Cloud Setup Guide for AutoVSF
 
-Để sử dụng tính năng OCR, bạn cần thiết lập một dự án trên Google Cloud Console để lấy file `credentials.json`.
+To use OCR, you need a Google Cloud project and a `credentials.json` file.
 
-## Bước 1: Tạo Dự án Google Cloud
-1. Truy cập [Google Cloud Console](https://console.cloud.google.com/).
-2. Đăng nhập bằng tài khoản Google của bạn.
-3. Tạo một dự án mới (New Project) hoặc chọn một dự án đã có.
+## Step 1: Create a Google Cloud Project
+1. Go to [Google Cloud Console](https://console.cloud.google.com/).
+2. Sign in with your Google account.
+3. Create a new project or select an existing one.
 
-## Bước 2: Bật Google Drive API
-1. Trên thanh tìm kiếm ở phía trên cùng, tìm từ khóa **"Google Drive API"**.
-2. Chọn kết quả tương ứng và nhấn nút **"Enable"**.
+## Step 2: Enable Google Drive API
+1. Search for **"Google Drive API"** in the top search bar.
+2. Select the result and click **"Enable"**.
 
-## Bước 3: Tạo file xác thực (credentials.json)
-1. Truy cập vào mục **"APIs & Services"** > **"Credentials"** từ menu bên trái.
-2. Nhấn **"Create Credentials"** ở phía trên và chọn **"OAuth client ID"**.
-3. Nếu đây là lần đầu, bạn có thể cần nhấn **"Configure Consent Screen"**:
-    - Chọn **External**.
-    - Điền các thông tin bắt buộc (Tên app, Email hỗ trợ).
-4. Quay lại trang **Create OAuth client ID**:
-    - **Application type**: Chọn **Desktop app**.
-    - **Name**: Đặt tên tùy ý (ví dụ: `AutoVSF-OCR`).
-    - Nhấn **Create**.
-5. Một hộp thoại hiện ra, hãy nhấn **"Download JSON"**.
-6. Đổi tên file vừa tải về thành `credentials.json` và lưu vào thư mục chứa mã nguồn của dự án (cùng cấp với file `main.py`).
+## Step 3: Create credentials.json
+1. Go to **"APIs & Services"** > **"Credentials"**.
+2. Click **"Create Credentials"** > **"OAuth client ID"**.
+3. If prompted, **"Configure Consent Screen"**:
+    - Choose **External**.
+    - Fill in required fields (App name, Support email).
+4. Back on the OAuth client ID page:
+    - **Application type**: **Desktop app**.
+    - **Name**: e.g. `AutoVSF-OCR`.
+    - Click **Create**.
+5. Click **"Download JSON"** in the dialog.
+6. Rename the file to `credentials.json` and place it in the project root (next to `main.py`).
 
-## Bước 4: Thiết lập trạng thái xác thực (Quan trọng)
-Để chương trình có thể tự động mở trình duyệt và xác thực mà không gặp lỗi "App not verified":
-1. Tại [Google Cloud Console](https://console.cloud.google.com/), truy cập mục **"APIs & Services"** > **"Audience"**.
-2. Tìm phần **"Publishing status"**.
-3. Nhấn nút **"PUBLISH APP"** và xác nhận.
-    - Việc này sẽ chuyển trạng thái từ "Testing" sang "In production", giúp quá trình đăng nhập lần đầu (tạo `token.json`) diễn ra trơn tru.
+## Step 4: Publish the App (Important)
+To allow the browser login flow without "App not verified" errors:
+1. In [Google Cloud Console](https://console.cloud.google.com/), go to **"APIs & Services"** > **"Audience"**.
+2. Under **"Publishing status"**, click **"PUBLISH APP"** and confirm.
+3. This changes status from "Testing" to "In production", ensuring a smooth first-time login (`token.json` creation).
 
 ---
-*Sau khi hoàn tất, bạn có thể khởi động `main.py` và bắt đầu sử dụng!*
+*Back to [main guide](../README.md)*
