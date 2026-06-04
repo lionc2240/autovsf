@@ -14,6 +14,8 @@ Open **PowerShell** (as Admin) and paste:
 irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 ```
 
+After installation, type `autovsf` in **any** PowerShell window to launch the tool. The installer registers a global PowerShell function for quick access.
+
 ---
 
 ## Screenshots
@@ -40,6 +42,11 @@ Configure Google Drive API and place `credentials.json` in the project root.
 > See [Google Cloud Setup Guide](docs/GOOGLE_SETUP.md)
 
 ### 3. Run
+
+- **PowerShell (anywhere):** After installing via the one-click script, just type:
+  ```powershell
+  autovsf
+  ```
 
 - **Windows:** Double-click `run.bat` or run:
   ```batch

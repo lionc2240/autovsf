@@ -12,6 +12,8 @@ Chỉ cần mở **PowerShell** (với quyền Admin) và dán lệnh sau để 
 irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 ```
 
+Sau khi cài đặt, gõ `autovsf` trong **bất kỳ** cửa sổ PowerShell nào để mở tool. Trình cài đặt tự động đăng ký hàm PowerShell toàn cục để truy cập nhanh.
+
 ---
 
 ## 📸 Ảnh chụp màn hình
@@ -40,6 +42,11 @@ Bạn cần cấu hình Google Drive API để lấy file xác thực `credentia
 ### 3. Chạy chương trình
 
 Bạn có thể chọn một trong các cách sau:
+
+- **PowerShell (mọi nơi):** Sau khi cài bằng one-click, chỉ cần gõ:
+  ```powershell
+  autovsf
+  ```
 
 - **Trên Windows:** Chạy tệp tin `run.bat`:
   ```batch

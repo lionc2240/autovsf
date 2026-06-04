@@ -14,6 +14,8 @@
 irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 ```
 
+安装后，在**任何** PowerShell 窗口中输入 `autovsf` 即可启动工具。安装程序会自动注册全局 PowerShell 函数以便快速访问。
+
 ---
 
 ## 📸 截图
@@ -40,6 +42,11 @@ irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 > 详见 [Google Cloud 设置指南](CN_GOOGLE_SETUP.md)
 
 ### 3. 运行
+
+- **PowerShell（任意位置）：** 使用一键安装后，只需输入：
+  ```powershell
+  autovsf
+  ```
 
 - **Windows：** 双击 `run.bat` 或运行：
   ```batch
