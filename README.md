@@ -26,9 +26,18 @@ Bạn cần cấu hình Google Drive API để lấy file xác thực `credentia
 > Xem chi tiết tại: [Hướng dẫn thiết lập Google Cloud](docs/GOOGLE_SETUP.md)
 
 ### 3. Chạy chương trình
-```powershell
-python main.py
-```
+
+Bạn có thể chọn một trong các cách sau:
+
+- **Trên Windows:** Chạy tệp tin `run.bat`:
+  ```batch
+  run.bat
+  ```
+
+- **Sử dụng Python trực tiếp:**
+  ```powershell
+  python main.py
+  ```
 
 ---
 
