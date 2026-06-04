@@ -34,6 +34,7 @@ output\ srt/
 .gemini/
 .qwen/
 .claude/
+.devcontainer/workspaces.code-workspace
 
 # AI context
 GEMINI.md
