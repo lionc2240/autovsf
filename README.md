@@ -1,6 +1,6 @@
 # AutoVSF - VideoSubFinder & OCR Pipeline
 
-**[Tiếng Việt](docs/VIE_README.md)**
+**[Tiếng Việt](docs/VIE_README.md)** | **[中文](docs/CN_README.md)**
 
 Extract hardcoded subtitles from videos using VideoSubFinder and OCR via Google Drive API.
 
@@ -13,6 +13,18 @@ Open **PowerShell** (as Admin) and paste:
 ```powershell
 irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 ```
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="images/autovsf_running.jpg" width="55%" alt="AutoVSF Running">
+</p>
+
+<p align="center">
+  <img src="images/autovsf_ocr.jpg" width="55%" alt="AutoVSF OCR">
+</p>
 
 ---
 

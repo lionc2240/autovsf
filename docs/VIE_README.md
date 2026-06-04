@@ -14,6 +14,18 @@ irm https://raw.githubusercontent.com/lionc2240/autovsf/main/install.ps1 | iex
 
 ---
 
+## 📸 Ảnh chụp màn hình
+
+<p align="center">
+  <img src="../images/autovsf_running.jpg" width="55%" alt="AutoVSF Running">
+</p>
+
+<p align="center">
+  <img src="../images/autovsf_ocr.jpg" width="55%" alt="AutoVSF OCR">
+</p>
+
+---
+
 ## Hướng dẫn thủ công (Nếu không dùng One-Click)
 
 ### 1. Yêu cầu hệ thống
