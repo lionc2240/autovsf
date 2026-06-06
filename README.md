@@ -2,6 +2,10 @@
 
 **[Tiếng Việt](docs/VIE_README.md)** | **[中文](docs/CN_README.md)**
 
+🔗 **Codespaces Edition:** [![GitHub](https://img.shields.io/badge/GitHub-View_on_GitHub-blue?logo=github)](https://github.com/lionc2240/autovsf-codespaces)
+🔗 **Colab Edition:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lionc2240/autovsf-colab/blob/main/AutoVSF_Colab_Edition.ipynb?hl=vi)
+
+
 Extract hardcoded subtitles from videos using VideoSubFinder and OCR via Google Drive API.
 
 ---
