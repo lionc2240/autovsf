@@ -197,6 +197,52 @@ try {
     Add-Content -Path $PROFILE -Value $fnDef
 } catch {}
 
+# Đăng ký Shortcut trên Desktop và Start Menu
+try {
+    Write-Host "`n[..] Dang tao phim tat (Shortcut) tren Desktop va Start Menu..." -ForegroundColor Yellow
+    $WshShell = New-Object -ComObject WScript.Shell
+    
+    $desktopPath = [System.IO.Path]::Combine([System.Environment]::GetFolderPath('Desktop'), "AutoVSF.lnk")
+    $startMenuPath = [System.IO.Path]::Combine([System.Environment]::GetFolderPath('StartMenu'), "Programs", "AutoVSF.lnk")
+    
+    $pythonExe = if (Test-Path "$PWD\venv\Scripts\pythonw.exe") { 
+        "$PWD\venv\Scripts\pythonw.exe" 
+    } elseif (Test-Path "$PWD\venv\Scripts\python.exe") {
+        "$PWD\venv\Scripts\python.exe"
+    } else {
+        "pythonw.exe"
+    }
+    
+    $iconPath = $pythonExe
+    $iconIndex = 0
+    if (-not (Test-Path $iconPath) -or $iconPath -eq "pythonw.exe") {
+        $iconPath = "C:\Windows\System32\shell32.dll"
+        $iconIndex = 137
+    }
+
+    # Desktop
+    $shortcut = $WshShell.CreateShortcut($desktopPath)
+    $shortcut.TargetPath = $pythonExe
+    $shortcut.Arguments = "`"$PWD\main.py`""
+    $shortcut.WorkingDirectory = $PWD
+    $shortcut.IconLocation = "$iconPath,$iconIndex"
+    $shortcut.Description = "AutoVSF Subtitle Extractor & OCR"
+    $shortcut.Save()
+
+    # Start Menu
+    $shortcutStart = $WshShell.CreateShortcut($startMenuPath)
+    $shortcutStart.TargetPath = $pythonExe
+    $shortcutStart.Arguments = "`"$PWD\main.py`""
+    $shortcutStart.WorkingDirectory = $PWD
+    $shortcutStart.IconLocation = "$iconPath,$iconIndex"
+    $shortcutStart.Description = "AutoVSF Subtitle Extractor & OCR"
+    $shortcutStart.Save()
+    
+    Write-Host "[OK] Da tao Shortcut thanh cong!" -ForegroundColor White
+} catch {
+    Write-Host "[⚠️] Khong the tao shortcut: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 # 6. Hoàn tất & Tương tác Menu
 Write-Host "`n=======================================" -ForegroundColor Yellow
 Write-Host "   Cai dat AutoVSF HOANTAT!" -ForegroundColor White
