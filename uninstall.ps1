@@ -47,6 +47,19 @@ try {
     Write-Host "[⚠️] Khong the cap nhat PowerShell Profile: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
+# 4. Remove Registry Key for Add/Remove Programs (Control Panel)
+try {
+    $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AutoVSF"
+    if (Test-Path $uninstallKey) {
+        Remove-Item $uninstallKey -Recurse -Force
+        Write-Host "[OK] Da go AutoVSF khoi Windows Control Panel." -ForegroundColor White
+    } else {
+        Write-Host "[.] Khong tim thay thong tin dang ky Control Panel." -ForegroundColor Gray
+    }
+} catch {
+    Write-Host "[⚠️] Khong the go khoi Control Panel: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 Write-Host "`n=======================================" -ForegroundColor Yellow
 Write-Host "Go cai dat Shortcut va Cau hinh hoan tat!" -ForegroundColor White
 Write-Host "De xoa hoan toan code va moi truong ao (venv), ban co the xoa thu muc du an tai:" -ForegroundColor Yellow

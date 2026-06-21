@@ -245,8 +245,24 @@ try {
     $shortcutStart.Save()
     
     Write-Host "[OK] Da tao Shortcut thanh cong!" -ForegroundColor White
+
+    # Đăng ký vào Control Panel (Apps & features) cho Current User (không cần quyền Admin)
+    $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AutoVSF"
+    if (-not (Test-Path $uninstallKey)) {
+        New-Item -Path $uninstallKey -Force | Out-Null
+    }
+    Set-ItemProperty -Path $uninstallKey -Name "DisplayName" -Value "AutoVSF"
+    Set-ItemProperty -Path $uninstallKey -Name "DisplayIcon" -Value "$iconPath,0"
+    Set-ItemProperty -Path $uninstallKey -Name "UninstallString" -Value "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$PWD\uninstall.ps1`""
+    Set-ItemProperty -Path $uninstallKey -Name "InstallLocation" -Value $PWD.Path
+    Set-ItemProperty -Path $uninstallKey -Name "Publisher" -Value "AutoVSF"
+    Set-ItemProperty -Path $uninstallKey -Name "DisplayVersion" -Value "1.0.0"
+    Set-ItemProperty -Path $uninstallKey -Name "NoModify" -Value 1
+    Set-ItemProperty -Path $uninstallKey -Name "NoRepair" -Value 1
+    
+    Write-Host "[OK] Da dang ky thanh cong vao Windows Control Panel!" -ForegroundColor White
 } catch {
-    Write-Host "[⚠️] Khong the tao shortcut: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "[⚠️] Khong the thiet lap shortcut/Control Panel: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
 # 6. Hoàn tất & Tương tác Menu
