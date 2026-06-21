@@ -262,10 +262,11 @@ $shouldExit = $false
 while (-not $shouldExit) {
     Write-Host "`n[1] Launch AutoVSF (Chay ngay)" -ForegroundColor White
     Write-Host "[2] Configure Google Cloud (Cai dat Google Drive OCR)" -ForegroundColor Yellow
+    Write-Host "[3] Uninstall AutoVSF (Go cai dat)" -ForegroundColor DarkGray
     Write-Host "[0] Cancel / Discard (Thoat)" -ForegroundColor Red
     Write-Host "───────────────────────────────────────" -ForegroundColor White
     
-    $choice = Read-Host "Nhap lua chon cua ban [1/2/0]"
+    $choice = Read-Host "Nhap lua chon cua ban [1/2/3/0]"
     
     switch ($choice) {
         "1" {
@@ -292,13 +293,22 @@ while (-not $shouldExit) {
             Write-Host "  3. Ban co the quay lai day va chon [1] de chay AutoVSF ngay." -ForegroundColor White
             continue
         }
+        "3" {
+            if (Test-Path "uninstall.ps1") {
+                Powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\uninstall.ps1
+            } else {
+                Write-Host "[❌] Khong tim thay file uninstall.ps1!" -ForegroundColor Red
+            }
+            $shouldExit = $true
+            break
+        }
         "0" {
             Write-Host "`n[OK] Tam biet! Ban co the chay lai nhanh bang cach go: autovsf hoac double click run.bat" -ForegroundColor White
             $shouldExit = $true
             break
         }
         default {
-            Write-Host "Lua chon khong hop le! Vui long nhap 1, 2 hoac 0." -ForegroundColor Red
+            Write-Host "Lua chon khong hop le! Vui long nhap 1, 2, 3 hoac 0." -ForegroundColor Red
         }
     }
 }
