@@ -180,13 +180,21 @@ try {
     $fnDef = "`nfunction autovsf { Set-Location `"$PWD`"; if (Test-Path `"venv\Scripts\python.exe`") { .\venv\Scripts\python main.py } else { python main.py } }`n"
     if (Test-Path $PROFILE) {
         $content = Get-Content $PROFILE -Raw
-        if ($content -notmatch "function autovsf") {
-            Add-Content -Path $PROFILE -Value $fnDef
+        if ($content -match "function autovsf") {
+            # Nếu đã tồn tại function autovsf cũ, lọc bỏ nó để cập nhật đường dẫn mới
+            $lines = Get-Content $PROFILE
+            $newLines = @()
+            foreach ($line in $lines) {
+                if ($line -notmatch "function autovsf") {
+                    $newLines += $line
+                }
+            }
+            $newLines | Set-Content $PROFILE
         }
     } else {
         New-Item -ItemType File -Path $PROFILE -Force | Out-Null
-        Add-Content -Path $PROFILE -Value $fnDef
     }
+    Add-Content -Path $PROFILE -Value $fnDef
 } catch {}
 
 # 6. Hoàn tất & Tương tác Menu
