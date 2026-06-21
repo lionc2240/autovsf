@@ -8,9 +8,9 @@ Write-Host "=======================================" -ForegroundColor Yellow
 $RepoName = "autovsf"
 $RepoUrl  = "https://github.com/lionc2240/autovsf.git"
 
-# 1. Tránh cài đặt vào thư mục System32 nếu mở PowerShell Admin mặc định
-if ($PWD.Path -like "*\System32" -or $PWD.Path -like "*\system32") {
-    Write-Host "[!] Phat hien dang o thu muc System32. Chuyen huong ve: $HOME" -ForegroundColor Yellow
+# 1. Tự động chuyển về thư mục Home ($HOME) nếu không chạy từ trong thư mục dự án AutoVSF
+if (-not (Test-Path "main.py")) {
+    Write-Host "[!] Tu dong chuyen vung lam viec ve thu muc Home: $HOME" -ForegroundColor Yellow
     Set-Location $HOME
 }
 
