@@ -213,11 +213,17 @@ try {
         "pythonw.exe"
     }
     
-    $iconPath = $pythonExe
-    $iconIndex = 0
-    if (-not (Test-Path $iconPath) -or $iconPath -eq "pythonw.exe") {
-        $iconPath = "C:\Windows\System32\shell32.dll"
-        $iconIndex = 137
+    $customIcon = Get-ChildItem -Path $PWD.Path -Filter "*.ico" | Select-Object -First 1
+    if ($customIcon) {
+        $iconPath = $customIcon.FullName
+        $iconIndex = 0
+    } else {
+        $iconPath = $pythonExe
+        $iconIndex = 0
+        if (-not (Test-Path $iconPath) -or $iconPath -eq "pythonw.exe") {
+            $iconPath = "C:\Windows\System32\shell32.dll"
+            $iconIndex = 137
+        }
     }
 
     # Desktop
