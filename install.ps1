@@ -224,7 +224,7 @@ try {
     $shortcut = $WshShell.CreateShortcut($desktopPath)
     $shortcut.TargetPath = $pythonExe
     $shortcut.Arguments = "`"$PWD\main.py`""
-    $shortcut.WorkingDirectory = $PWD
+    $shortcut.WorkingDirectory = $PWD.Path
     $shortcut.IconLocation = "$iconPath,$iconIndex"
     $shortcut.Description = "AutoVSF Subtitle Extractor & OCR"
     $shortcut.Save()
@@ -233,7 +233,7 @@ try {
     $shortcutStart = $WshShell.CreateShortcut($startMenuPath)
     $shortcutStart.TargetPath = $pythonExe
     $shortcutStart.Arguments = "`"$PWD\main.py`""
-    $shortcutStart.WorkingDirectory = $PWD
+    $shortcutStart.WorkingDirectory = $PWD.Path
     $shortcutStart.IconLocation = "$iconPath,$iconIndex"
     $shortcutStart.Description = "AutoVSF Subtitle Extractor & OCR"
     $shortcutStart.Save()
