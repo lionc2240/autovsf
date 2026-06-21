@@ -8,6 +8,12 @@ Write-Host "=======================================" -ForegroundColor Yellow
 $RepoName = "autovsf"
 $RepoUrl  = "https://github.com/lionc2240/autovsf.git"
 
+# 1. Tránh cài đặt vào thư mục System32 nếu mở PowerShell Admin mặc định
+if ($PWD.Path -like "*\System32" -or $PWD.Path -like "*\system32") {
+    Write-Host "[!] Phat hien dang o thu muc System32. Chuyen huong ve: $HOME" -ForegroundColor Yellow
+    Set-Location $HOME
+}
+
 # 1. Cài Git
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Write-Host "Dang cai Git..." -ForegroundColor Yellow
@@ -29,13 +35,20 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue) -or
 Write-Host "Dang clone/cap nhat repository..." -ForegroundColor Yellow
 $currentDirName = Split-Path $PWD -Leaf
 
-if ($currentDirName -eq $RepoName -and (Test-Path ".git")) {
-    Write-Host "Ban dang dung san trong thu muc autovsf -> Dang cap nhat..." -ForegroundColor Yellow
-    git pull
+if (Test-Path "main.py") {
+    Write-Host "Ban dang dung san trong thu muc AutoVSF." -ForegroundColor Yellow
+    if (Test-Path ".git") {
+        Write-Host "Dang cap nhat code..." -ForegroundColor Yellow
+        git pull
+    } else {
+        Write-Host "Khong tim thay thong tin Git (.git). Bo qua buoc cap nhat code." -ForegroundColor Yellow
+    }
 } elseif (Test-Path $RepoName) {
     Write-Host "Thu muc autovsf da ton tai → Dang cap nhat..." -ForegroundColor Yellow
     Set-Location $RepoName
-    git pull
+    if (Test-Path ".git") {
+        git pull
+    }
 } else {
     git clone $RepoUrl
     Set-Location $RepoName
@@ -140,19 +153,31 @@ if (Test-Path $vsfExe) {
 }
 Write-Host "────────────────────────────────────────" -ForegroundColor White
 
-# 5. Cài Python packages
-Write-Host "`n[..] Dang cai thu vien Python..." -ForegroundColor Yellow
-python -m pip install --upgrade pip --quiet
-python -m pip install watchdog google-api-python-client oauth2client httplib2 opencv-python psutil Pillow --quiet
-Write-Host "[OK] Da cai dat day du thu vien Python." -ForegroundColor White
+# 5. Cài Python packages (Môi trường ảo venv)
+Write-Host "`n[..] Dang thiet lap moi truong ao Python (venv)..." -ForegroundColor Yellow
+if (-not (Test-Path "venv")) {
+    python -m venv venv
+}
+$venvPython = Join-Path $PWD "venv\Scripts\python.exe"
+if (Test-Path $venvPython) {
+    Write-Host "[..] Dang cai thu vien Python vao moi truong ao (venv)..." -ForegroundColor Yellow
+    & $venvPython -m pip install --upgrade pip --quiet
+    & $venvPython -m pip install watchdog google-api-python-client oauth2client httplib2 opencv-python psutil Pillow --quiet
+    Write-Host "[OK] Da cai dat day du thu vien Python." -ForegroundColor White
+} else {
+    Write-Host "[⚠️] Canh bao: Khong the tao venv. Tien hanh cai dat Global..." -ForegroundColor Yellow
+    python -m pip install --upgrade pip --quiet
+    python -m pip install watchdog google-api-python-client oauth2client httplib2 opencv-python psutil Pillow --quiet
+    Write-Host "[OK] Da cai dat day du thu vien Python (Global)." -ForegroundColor White
+}
 
-# Đăng ký lệnh nhanh 'autovsf' vào PowerShell Profile để gọi từ bất kỳ đâu
+# Đăng ký lệnh nhanh 'autovsf' vào PowerShell Profile để gọi từ bất kỳ đâu (Có hỗ trợ Venv)
 try {
     $profileDir = Split-Path $PROFILE -Parent
     if (-not (Test-Path $profileDir)) {
         New-Item -ItemType Directory -Force -Path $profileDir | Out-Null
     }
-    $fnDef = "`nfunction autovsf { Set-Location `"$PWD`"; python main.py }`n"
+    $fnDef = "`nfunction autovsf { Set-Location `"$PWD`"; if (Test-Path `"venv\Scripts\python.exe`") { .\venv\Scripts\python main.py } else { python main.py } }`n"
     if (Test-Path $PROFILE) {
         $content = Get-Content $PROFILE -Raw
         if ($content -notmatch "function autovsf") {
@@ -185,7 +210,12 @@ while (-not $shouldExit) {
     switch ($choice) {
         "1" {
             Write-Host "`n[..] Dang khoi chay AutoVSF..." -ForegroundColor Yellow
-            python main.py
+            $venvPython = Join-Path $PWD "venv\Scripts\python.exe"
+            if (Test-Path $venvPython) {
+                & $venvPython main.py
+            } else {
+                python main.py
+            }
             $shouldExit = $true
             break
         }
